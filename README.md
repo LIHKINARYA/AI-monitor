@@ -96,8 +96,9 @@ npm run deploy:rules
 
 ```
 ├── firebase.json                # Firebase Hosting SPA routing & static asset config
-├── .firebaserc                  # Firebase project linkage (affable-state-txjsq)
+├── .firebaserc                  # Firebase project linkage (ai-monitor-63bda)
 ├── firestore.rules              # Zero-Trust ABAC security rules for Firestore
+├── firebase-applet-config.example.json # Safe configuration template without secrets
 ├── server.ts                    # Express backend with MCP RPC and compression APIs
 ├── server/
 │   └── mcpServer.ts             # Claude Code Model Context Protocol tool definitions

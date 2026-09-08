@@ -28,7 +28,7 @@ import {
   CompactionRecord,
 } from "../services/firestoreSync";
 import { MemoryItem } from "../types";
-import firebaseConfig from "../../firebase-applet-config.json";
+import firebaseConfig from "../firebaseConfig";
 
 interface FirebaseCloudViewProps {
   currentUser: User | null;

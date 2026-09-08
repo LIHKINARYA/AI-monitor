@@ -14,7 +14,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { loginWithGoogle, logoutUser } from "../firebase";
-import firebaseConfig from "../../firebase-applet-config.json";
+import firebaseConfig from "../firebaseConfig";
 
 interface CloudSyncPanelProps {
   currentUser: User | null;
