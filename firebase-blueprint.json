@@ -1,0 +1,63 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile and preferences",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "User UID matching auth.uid" },
+        "email": { "type": "string", "description": "User email address" },
+        "displayName": { "type": "string", "description": "Display name of user" },
+        "createdAt": { "type": "string", "description": "Creation ISO timestamp" },
+        "updatedAt": { "type": "string", "description": "Update ISO timestamp" }
+      },
+      "required": ["uid", "email", "createdAt"]
+    },
+    "MemoryItem": {
+      "title": "MemoryItem",
+      "description": "Persisted architectural memory item, anti-regression invariant, or episodic decision",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Memory unique ID" },
+        "userId": { "type": "string", "description": "Owner user UID" },
+        "type": { "type": "string", "enum": ["EPISODIC", "SEMANTIC", "ANTI_REGRESSION", "WORKING_STATE"], "description": "Category of memory" },
+        "title": { "type": "string", "maxLength": 200, "description": "Concise summary title" },
+        "content": { "type": "string", "maxLength": 5000, "description": "Core invariant or decision knowledge" },
+        "confidence": { "type": "number", "description": "Confidence score between 0 and 1" },
+        "sourceFile": { "type": "string", "maxLength": 500, "description": "Target source file path" },
+        "createdAt": { "type": "string", "description": "Creation ISO timestamp" }
+      },
+      "required": ["id", "userId", "type", "title", "content", "createdAt"]
+    },
+    "CompactionSession": {
+      "title": "CompactionSession",
+      "description": "Record of a context compaction run and token metrics",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Session run ID" },
+        "userId": { "type": "string", "description": "Owner user UID" },
+        "activeGoal": { "type": "string", "maxLength": 500, "description": "Primary goal during compaction" },
+        "originalTokens": { "type": "number", "description": "Original raw token count" },
+        "compressedTokens": { "type": "number", "description": "Compacted token count" },
+        "engine": { "type": "string", "description": "Engine used for compaction" },
+        "synthesizedMemory": { "type": "string", "maxLength": 10000, "description": "Compacted prompt working memory" },
+        "createdAt": { "type": "string", "description": "Run ISO timestamp" }
+      },
+      "required": ["id", "userId", "activeGoal", "originalTokens", "compressedTokens", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile document containing account info"
+    },
+    "/users/{userId}/memories/{memoryId}": {
+      "schema": "MemoryItem",
+      "description": "User-specific persistent architectural memory items and anti-regressions"
+    },
+    "/users/{userId}/compaction_sessions/{sessionId}": {
+      "schema": "CompactionSession",
+      "description": "User context compaction history"
+    }
+  }
+}

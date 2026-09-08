@@ -1,0 +1,102 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && 
+        request.auth.token.email == 'nikhilarya72@gmail.com' && 
+        request.auth.token.email_verified == true;
+    }
+
+    function isValidUserProfile(data, userId) {
+      return data.uid is string && 
+        data.uid == userId && 
+        data.email is string && 
+        data.email.size() <= 256 && 
+        data.createdAt is string && 
+        data.createdAt.size() <= 64;
+    }
+
+    function isValidMemoryItem(data, userId) {
+      return data.id is string &&
+        data.userId is string &&
+        data.userId == userId &&
+        data.type is string &&
+        (data.type == 'EPISODIC' || data.type == 'SEMANTIC' || data.type == 'ANTI_REGRESSION' || data.type == 'WORKING_STATE') &&
+        data.title is string && data.title.size() <= 300 &&
+        data.content is string && data.content.size() <= 10000 &&
+        data.createdAt is string && data.createdAt.size() <= 64;
+    }
+
+    function isValidCompactionSession(data, userId) {
+      return data.id is string &&
+        data.userId is string &&
+        data.userId == userId &&
+        data.activeGoal is string && data.activeGoal.size() <= 1000 &&
+        data.originalTokens is number &&
+        data.compressedTokens is number &&
+        data.createdAt is string && data.createdAt.size() <= 64;
+    }
+
+    // Connection health check route
+    match /test/connection {
+      allow get: if true;
+    }
+
+    // User Profile
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if false;
+      allow create: if isOwner(userId) && isValidId(userId) && isValidUserProfile(incoming(), userId);
+      allow update: if isOwner(userId) && isValidId(userId) && 
+        incoming().uid == existing().uid && 
+        incoming().email == existing().email && 
+        isValidUserProfile(incoming(), userId);
+      allow delete: if isOwner(userId) || isAdmin();
+
+      // User Memories & Anti-Regressions
+      match /memories/{memoryId} {
+        allow get, list: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId) && isValidId(memoryId) && isValidMemoryItem(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(memoryId) && 
+          incoming().userId == existing().userId &&
+          incoming().createdAt == existing().createdAt &&
+          isValidMemoryItem(incoming(), userId);
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+
+      // User Compaction Session History
+      match /compaction_sessions/{sessionId} {
+        allow get, list: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId) && isValidId(sessionId) && isValidCompactionSession(incoming(), userId);
+        allow update: if false; // Sessions are immutable audit logs
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+    }
+  }
+}
