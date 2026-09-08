@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { User, onAuthStateChanged } from "firebase/auth";
 import { Navbar } from "./components/Navbar";
 import { ContextCompressor } from "./components/ContextCompressor";
 import { MemoryExplorer } from "./components/MemoryExplorer";
@@ -8,28 +7,25 @@ import { TokenBudgetMeter } from "./components/TokenBudgetMeter";
 import { ArchitectureGuide } from "./components/ArchitectureGuide";
 import { ExtensionExportModal } from "./components/ExtensionExportModal";
 import { McpClaudeConnector } from "./components/McpClaudeConnector";
-import { FirebaseCloudView } from "./components/FirebaseCloudView";
-import { INITIAL_MEMORIES } from "./data/sampleData";
-import { MemoryItem, MemoryType } from "./types";
+import { MemoryItem } from "./types";
 import { generateLocalEmbedding } from "./utils/tokenEstimator";
-import { auth, testConnection } from "./firebase";
 import {
-  subscribeToUserMemories,
-  saveMemoryToFirestore,
-  deleteMemoryFromFirestore,
-  recordCompactionSession,
-  syncUserProfile,
-} from "./services/firestoreSync";
+  loadLocalMemories,
+  saveLocalMemories,
+  loadLocalTokensSaved,
+  saveLocalTokensSaved,
+  resetLocalMemoriesToDefaults,
+  importLocalDataFromJSON,
+} from "./services/localStorage";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<string>("compressor");
   const [hasGeminiKey, setHasGeminiKey] = useState<boolean>(true);
-  const [totalTokensSaved, setTotalTokensSaved] = useState<number>(142800);
+  const [totalTokensSaved, setTotalTokensSaved] = useState<number>(() => loadLocalTokensSaved());
   const [isExportModalOpen, setIsExportModalOpen] = useState<boolean>(false);
-  const [memories, setMemories] = useState<MemoryItem[]>(INITIAL_MEMORIES);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [memories, setMemories] = useState<MemoryItem[]>(() => loadLocalMemories());
 
-  // Check health, Gemini connection & Firebase connection on mount
+  // Check backend health & Gemini status on mount
   useEffect(() => {
     fetch("/api/health")
       .then((res) => res.json())
@@ -39,46 +35,17 @@ export default function App() {
         }
       })
       .catch(() => {});
-
-    // Test Firestore connection as mandated by skill
-    testConnection().catch((err) => {
-      console.warn("Firestore testConnection note:", err);
-    });
   }, []);
-
-  // Listen to Firebase Auth state
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setCurrentUser(user);
-      if (user) {
-        try {
-          await syncUserProfile(user);
-        } catch (e) {
-          console.error("Failed to sync user profile:", e);
-        }
-      }
-    });
-    return () => unsubscribe();
-  }, []);
-
-  // Listen to User Cloud Memories when authenticated
-  useEffect(() => {
-    if (!currentUser) return;
-
-    const unsubscribe = subscribeToUserMemories(currentUser.uid, (cloudItems) => {
-      if (cloudItems && cloudItems.length > 0) {
-        setMemories(cloudItems);
-      }
-    });
-
-    return () => unsubscribe();
-  }, [currentUser]);
 
   const handleIncrementTokensSaved = (tokens: number) => {
-    setTotalTokensSaved((prev) => prev + tokens);
+    setTotalTokensSaved((prev) => {
+      const updated = prev + tokens;
+      saveLocalTokensSaved(updated);
+      return updated;
+    });
   };
 
-  const handleAddMemory = async (
+  const handleAddMemory = (
     newMem: Omit<MemoryItem, "id" | "createdAt" | "embeddingVector">
   ) => {
     const id = `mem-${Date.now().toString(36)}`;
@@ -92,29 +59,32 @@ export default function App() {
       id,
       createdAt,
       embeddingVector,
-      userId: currentUser?.uid,
     };
 
-    setMemories((prev) => [memoryItem, ...prev]);
-
-    // If signed into Firebase, persist to Firestore
-    if (currentUser) {
-      try {
-        await saveMemoryToFirestore(currentUser.uid, memoryItem);
-      } catch (err) {
-        console.error("Error saving memory to Firestore:", err);
-      }
-    }
+    setMemories((prev) => {
+      const updated = [memoryItem, ...prev];
+      saveLocalMemories(updated);
+      return updated;
+    });
   };
 
-  const handleDeleteMemory = async (id: string) => {
-    setMemories((prev) => prev.filter((m) => m.id !== id));
-    if (currentUser) {
-      try {
-        await deleteMemoryFromFirestore(currentUser.uid, id);
-      } catch (err) {
-        console.error("Error deleting memory from Firestore:", err);
-      }
+  const handleDeleteMemory = (id: string) => {
+    setMemories((prev) => {
+      const updated = prev.filter((m) => m.id !== id);
+      saveLocalMemories(updated);
+      return updated;
+    });
+  };
+
+  const handleResetMemories = () => {
+    const defaults = resetLocalMemoriesToDefaults();
+    setMemories(defaults);
+  };
+
+  const handleImportMemories = (jsonText: string) => {
+    const res = importLocalDataFromJSON(jsonText);
+    if (res.success) {
+      setMemories(loadLocalMemories());
     }
   };
 
@@ -142,7 +112,6 @@ export default function App() {
         hasGeminiKey={hasGeminiKey}
         totalTokensSaved={totalTokensSaved}
         onOpenExport={() => setIsExportModalOpen(true)}
-        currentUser={currentUser}
       />
 
       {/* Main Content Viewport */}
@@ -161,21 +130,14 @@ export default function App() {
             memories={memories}
             onAddMemory={handleAddMemory}
             onDeleteMemory={handleDeleteMemory}
+            onResetMemories={handleResetMemories}
+            onImportMemories={handleImportMemories}
           />
         )}
 
         {activeTab === "graph" && <DecisionGraph />}
 
         {activeTab === "budget" && <TokenBudgetMeter />}
-
-        {activeTab === "firebase" && (
-          <FirebaseCloudView
-            currentUser={currentUser}
-            memories={memories}
-            onAddMemory={handleAddMemory}
-            onDeleteMemory={handleDeleteMemory}
-          />
-        )}
 
         {activeTab === "guide" && <ArchitectureGuide />}
       </main>
@@ -187,13 +149,15 @@ export default function App() {
             <span className="font-semibold text-neutral-800">MemGovernor</span>
             <span>•</span>
             <span>Hierarchical Memory & Context Governor for AI Agents</span>
+            <span>•</span>
+            <span className="text-emerald-700 font-medium">Local-Only Storage Active</span>
           </div>
           <div className="flex items-center space-x-4">
             <button
-              onClick={() => setActiveTab("firebase")}
-              className="hover:text-neutral-900 transition-colors font-medium text-amber-600"
+              onClick={() => setActiveTab("memory")}
+              className="hover:text-neutral-900 transition-colors font-medium text-emerald-700"
             >
-              Firebase Cloud Status
+              Local Memory Store ({memories.length})
             </button>
             <button
               onClick={() => setActiveTab("guide")}

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import { MemoryItem, MemoryType } from "../types";
 import {
   generateLocalEmbedding,
@@ -19,20 +19,30 @@ import {
   FileText,
   AlertTriangle,
   RotateCcw,
+  HardDrive,
+  Download,
+  Upload,
 } from "lucide-react";
+import { exportLocalDataToFile } from "../services/localStorage";
 
 interface MemoryExplorerProps {
   memories: MemoryItem[];
   onAddMemory: (memory: Omit<MemoryItem, "id" | "createdAt" | "embeddingVector">) => void;
   onDeleteMemory?: (id: string) => void;
+  onResetMemories?: () => void;
+  onImportMemories?: (jsonText: string) => void;
 }
 
 export const MemoryExplorer: React.FC<MemoryExplorerProps> = ({
   memories,
   onAddMemory,
   onDeleteMemory,
+  onResetMemories,
+  onImportMemories,
 }) => {
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [importStatus, setImportStatus] = useState<string | null>(null);
   const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>("ALL");
   const [isAddingNew, setIsAddingNew] = useState<boolean>(false);
 
@@ -161,14 +171,96 @@ export const MemoryExplorer: React.FC<MemoryExplorerProps> = ({
             </p>
           </div>
 
-          <button
-            onClick={() => setIsAddingNew(!isAddingNew)}
-            className="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-medium rounded-lg transition-colors self-start shadow-xs"
-            id="btn-add-memory"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>{isAddingNew ? "Cancel" : "Add Memory Entry"}</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => exportLocalDataToFile()}
+              className="inline-flex items-center space-x-1 px-3 py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 text-xs font-medium rounded-lg transition-colors border border-neutral-200"
+              title="Download your memories as a local JSON file"
+              id="btn-export-local-json"
+            >
+              <Download className="w-3.5 h-3.5 text-neutral-600" />
+              <span>Export JSON</span>
+            </button>
+
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="inline-flex items-center space-x-1 px-3 py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 text-xs font-medium rounded-lg transition-colors border border-neutral-200"
+              title="Import memories from a previously saved JSON backup"
+              id="btn-import-local-json"
+            >
+              <Upload className="w-3.5 h-3.5 text-neutral-600" />
+              <span>Import JSON</span>
+            </button>
+
+            {onResetMemories && (
+              <button
+                onClick={() => {
+                  if (window.confirm("Reset all memories to initial sample data?")) {
+                    onResetMemories();
+                  }
+                }}
+                className="inline-flex items-center space-x-1 px-2.5 py-2 hover:bg-neutral-100 text-neutral-500 hover:text-neutral-800 text-xs font-medium rounded-lg transition-colors"
+                title="Reset to default benchmark memories"
+                id="btn-reset-memories"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Reset</span>
+              </button>
+            )}
+
+            <button
+              onClick={() => setIsAddingNew(!isAddingNew)}
+              className="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-medium rounded-lg transition-colors shadow-xs"
+              id="btn-add-memory"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>{isAddingNew ? "Cancel" : "Add Memory"}</span>
+            </button>
+
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept=".json"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                  const content = event.target?.result as string;
+                  if (content && onImportMemories) {
+                    onImportMemories(content);
+                    setImportStatus("Imported successfully!");
+                    setTimeout(() => setImportStatus(null), 3000);
+                  }
+                };
+                reader.readAsText(file);
+                e.target.value = "";
+              }}
+            />
+          </div>
+        </div>
+
+        {importStatus && (
+          <div className="mt-3 px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-800 flex items-center space-x-2">
+            <Check className="w-4 h-4 text-emerald-600" />
+            <span>{importStatus}</span>
+          </div>
+        )}
+
+        {/* Local Storage Indicator Banner */}
+        <div className="mt-3 pt-3 border-t border-neutral-100 flex flex-wrap items-center justify-between gap-2 text-xs text-neutral-500">
+          <div className="flex items-center space-x-2">
+            <HardDrive className="w-3.5 h-3.5 text-emerald-600" />
+            <span className="font-medium text-neutral-700">Storage Engine:</span>
+            <span className="font-mono bg-neutral-100 px-1.5 py-0.5 rounded text-neutral-800 text-[11px]">
+              Local-Only (Browser LocalStorage)
+            </span>
+            <span className="text-[11px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+              100% Offline • Zero Cloud Dependencies
+            </span>
+          </div>
+          <span className="text-[11px]">No external servers, tokens or cloud logins required.</span>
         </div>
 
         {/* Search & Query Bar */}

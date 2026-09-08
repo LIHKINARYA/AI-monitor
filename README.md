@@ -5,7 +5,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue.svg)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-19-cyan.svg)](https://react.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-v4-38bdf8.svg)](https://tailwindcss.com/)
-[![Firebase](https://img.shields.io/badge/Firebase-Firestore%20%26%20Auth-orange.svg)](https://firebase.google.com/)
+[![Storage](https://img.shields.io/badge/Storage-Local--First%20%28Offline%29-emerald.svg)](https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 ---
@@ -22,7 +22,7 @@ When autonomous coding agents execute complex software projects, conversation co
    - **Anti-Regression Invariants**: Explicit directives and rules the agent must never violate.
 3. **Local Vector & BM25 Hybrid Retrieval**: 64-dimensional semantic embeddings combined with term-frequency keyword matching for sub-millisecond retrieval in offline environments.
 4. **Claude Code / Cursor MCP Connector**: Built-in Model Context Protocol (MCP) server endpoints (`/api/mcp/rpc`) that allow Claude Code CLI and IDE extensions to fetch relevant context on demand.
-5. **Firebase Cloud Persistence & Security**: Multi-device sync backed by Google Cloud Firestore and Firebase Authentication with strict Zero-Trust Attribute-Based Access Control (ABAC) security rules.
+5. **Local-First Zero-Cloud Privacy**: All memories, decision trees, and compaction metrics persist directly inside your browser's encrypted local storage (`localStorage`), with 1-click JSON backup export and import. No mandatory cloud accounts or external cloud database locks.
 
 ---
 

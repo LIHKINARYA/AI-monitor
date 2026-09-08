@@ -8,9 +8,8 @@ import {
   Download,
   BookOpen,
   ShieldCheck,
-  Cloud,
+  HardDrive,
 } from "lucide-react";
-import { User } from "firebase/auth";
 
 interface NavbarProps {
   activeTab: string;
@@ -18,7 +17,6 @@ interface NavbarProps {
   hasGeminiKey: boolean;
   totalTokensSaved: number;
   onOpenExport: () => void;
-  currentUser?: User | null;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -27,7 +25,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   hasGeminiKey,
   totalTokensSaved,
   onOpenExport,
-  currentUser,
 }) => {
   const tabs = [
     { id: "compressor", label: "Context Compressor", icon: Terminal },
@@ -35,7 +32,6 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: "memory", label: "Semantic & Vector Memory", icon: Layers },
     { id: "graph", label: "Episodic Decision Graph", icon: Network },
     { id: "budget", label: "Window Governor", icon: ShieldCheck },
-    { id: "firebase", label: "Firebase Cloud Storage", icon: Cloud, badge: "HOSTED" },
     { id: "guide", label: "Architecture Thesis", icon: BookOpen },
   ];
 
@@ -83,21 +79,15 @@ export const Navbar: React.FC<NavbarProps> = ({
               <Sparkles className="w-3.5 h-3.5 text-amber-500" />
             </div>
 
-            {/* Firebase Cloud Status */}
-            <button
-              onClick={() => setActiveTab("firebase")}
-              className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-xs border transition-colors ${
-                currentUser
-                  ? "bg-amber-50/70 border-amber-200 text-amber-900"
-                  : "bg-neutral-50 border-neutral-200 text-neutral-700 hover:bg-neutral-100"
-              }`}
+            {/* Local Storage Offline Status */}
+            <div
+              className="flex items-center space-x-1.5 px-2.5 py-1 bg-neutral-50 border border-neutral-200 rounded-lg text-xs"
+              title="All memories, decisions, and compaction logs are stored locally on your device in browser LocalStorage"
             >
-              <Cloud className={`w-3.5 h-3.5 ${currentUser ? "text-amber-600" : "text-neutral-500"}`} />
-              <span className="font-medium hidden sm:inline">
-                {currentUser ? (currentUser.displayName || currentUser.email?.split("@")[0]) : "Firebase Cloud"}
-              </span>
+              <HardDrive className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="text-neutral-700 font-medium hidden sm:inline">Local Storage Only</span>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            </button>
+            </div>
 
             {/* VS Code / MCP Export Button */}
             <button
