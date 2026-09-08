@@ -56,7 +56,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## 🌐 Firebase Hosting Deployment (1-Click Public URL)
 
-This repository is **pre-configured** for Firebase Hosting (`firebase.json` and `.firebaserc` pointing to project `affable-state-txjsq`). Anyone on the web can visit your hosted application with **zero login required**.
+This repository is **pre-configured** for Firebase Hosting (`firebase.json` and `.firebaserc` pointing to project `ai-monitor-63bda`). Anyone on the web can visit your hosted application with **zero login required**.
 
 ### Step 1: Login to Firebase CLI
 ```bash
@@ -70,13 +70,19 @@ npm run deploy:hosting
 ```
 *Or run manually:*
 ```bash
-npm run build
+npm run build:client
 npx firebase-tools deploy --only hosting
 ```
 
+> **Windows Users Note**: If you encounter `Cannot find module @rollup/rollup-win32-x64-msvc`, simply run:
+> ```bash
+> npm install -D @rollup/rollup-win32-x64-msvc
+> ```
+> and re-run `npm run deploy:hosting`.
+
 Your app will be immediately live and globally distributed on:
-👉 **`https://affable-state-txjsq.web.app`**
-👉 **`https://affable-state-txjsq.firebaseapp.com`**
+👉 **`https://ai-monitor-63bda.web.app`**
+👉 **`https://ai-monitor-63bda.firebaseapp.com`**
 
 ### Step 3 (Optional): Deploy Firestore Security Rules
 To update or deploy the Zero-Trust database rules:

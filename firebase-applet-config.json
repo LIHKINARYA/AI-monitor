@@ -1,12 +1,12 @@
 {
-  "projectId": "affable-state-txjsq",
-  "appId": "1:75272128247:web:e1476430267637534bb5f2",
-  "apiKey": "AIzaSyDoArD3nKOWbHJnuku_NDu8w15dsL2AHyw",
-  "authDomain": "affable-state-txjsq.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-memgovernoraiage-491d1478-5b98-4918-8945-0ec34c60586a",
-  "storageBucket": "affable-state-txjsq.firebasestorage.app",
-  "messagingSenderId": "75272128247",
-  "measurementId": "",
-  "oAuthClientId": "75272128247-q1g28i0q9hp62m49em5sdfpjbf0t468o.apps.googleusercontent.com",
+  "projectId": "ai-monitor-63bda",
+  "appId": "1:951362134694:web:98a87f0ef14dc761a74a67",
+  "apiKey": "AIzaSyCjo-3RJd0Ly5lL-PiToiPJqY0qRHddXyg",
+  "authDomain": "ai-monitor-63bda.firebaseapp.com",
+  "firestoreDatabaseId": "",
+  "storageBucket": "ai-monitor-63bda.firebasestorage.app",
+  "messagingSenderId": "951362134694",
+  "measurementId": "G-EXVQ91PMYL",
+  "oAuthClientId": "",
   "recaptchaSiteKey": ""
 }
