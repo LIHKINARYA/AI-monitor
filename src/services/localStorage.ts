@@ -1,9 +1,66 @@
-import { MemoryItem } from "../types";
+import { MemoryItem, DecisionNode } from "../types";
 import { INITIAL_MEMORIES } from "../data/sampleData";
 
 const MEMORIES_KEY = "memgovernor_local_memories_v2";
 const TOKENS_SAVED_KEY = "memgovernor_tokens_saved_v2";
 const COMPACTIONS_KEY = "memgovernor_compactions_history_v2";
+const DECISIONS_KEY = "memgovernor_decision_nodes_v2";
+
+export const INITIAL_DECISION_NODES: DecisionNode[] = [
+  {
+    id: "node-1",
+    turn: 1,
+    type: "MILESTONE",
+    title: "Goal Initiated: Security Hardening",
+    description: "User asks to migrate REST API authentication from Bearer Authorization headers in localStorage to secure signed HttpOnly cookies.",
+    tokensCost: "1,240 tokens",
+    outcome: "Task planned into 3 milestones: Middleware, Login endpoint, Client axios interceptor.",
+    timestamp: "2026-09-01T10:00:00Z",
+  },
+  {
+    id: "node-2",
+    turn: 3,
+    type: "SUCCESS",
+    title: "Milestone 1 Committed: Cookie Middleware",
+    description: "Installed cookie-parser and implemented verifySession() reading req.cookies['session_id'].",
+    tokensCost: "3,800 tokens",
+    outcome: "Cookie verification passed in test suite. Milestone recorded into Warm Episodic Memory.",
+    antiRegressionRule: "Auth token lives in cookie header, NOT req.headers.authorization.",
+    timestamp: "2026-09-01T10:15:00Z",
+  },
+  {
+    id: "node-3",
+    turn: 6,
+    type: "FAILURE",
+    title: "Attempted Sub-task: Cross-Domain Cookie Drop",
+    description: "Agent attempted withCredentials: false on client requests during billing endpoint tests. Cookies were dropped by browser CORS policy.",
+    tokensCost: "8,900 tokens (Verbose CORS logs)",
+    outcome: "Dead-end identified: SameSite=None + Secure=true required for cross-origin local staging.",
+    antiRegressionRule: "Always set withCredentials: true on axios instance; do not revert.",
+    timestamp: "2026-09-01T10:30:00Z",
+  },
+  {
+    id: "node-4",
+    turn: 11,
+    type: "INTERCEPTION",
+    title: "Governor Interception: Loop & Regression Blocked",
+    description: "5 turns later, while building /api/billing/invoices, LLM context began degrading and agent generated: 'const token = req.headers.authorization'. MemGovernor intercepted before tool execution!",
+    tokensCost: "Saved ~24,000 tokens of debugging loop",
+    outcome: "Agent corrected in-flight to use req.cookies['session_id']. Zero regression introduced to codebase.",
+    antiRegressionRule: "Enforced Anti-Regression #01.",
+    timestamp: "2026-09-01T10:55:00Z",
+  },
+  {
+    id: "node-5",
+    turn: 14,
+    type: "SUCCESS",
+    title: "Task Finalized: Clean Context Rollup",
+    description: "All endpoints verified. Ephemeral tool outputs collapsed into a 240-token episodic summary.",
+    tokensCost: "Total session governed: 12,400 tokens (vs 74,000 without Governor)",
+    outcome: "Repository ready for deployment with clean commit history.",
+    timestamp: "2026-09-01T11:20:00Z",
+  },
+];
 
 export interface LocalCompactionRecord {
   id: string;
@@ -46,6 +103,72 @@ export function saveLocalMemories(memories: MemoryItem[]): void {
   } catch (err) {
     console.error("Error saving memories to localStorage:", err);
   }
+}
+
+/**
+ * Update an individual memory item in localStorage.
+ */
+export function updateLocalMemory(updatedItem: MemoryItem): MemoryItem[] {
+  const current = loadLocalMemories();
+  const updated = current.map((m) => (m.id === updatedItem.id ? updatedItem : m));
+  saveLocalMemories(updated);
+  return updated;
+}
+
+/**
+ * Delete an individual memory item by ID.
+ */
+export function deleteLocalMemory(id: string): MemoryItem[] {
+  const current = loadLocalMemories();
+  const filtered = current.filter((m) => m.id !== id);
+  saveLocalMemories(filtered);
+  return filtered;
+}
+
+/**
+ * Load decision graph nodes from localStorage.
+ */
+export function loadLocalDecisionNodes(): DecisionNode[] {
+  try {
+    const raw = localStorage.getItem(DECISIONS_KEY);
+    if (!raw) {
+      saveLocalDecisionNodes(INITIAL_DECISION_NODES);
+      return INITIAL_DECISION_NODES;
+    }
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      return parsed;
+    }
+    return INITIAL_DECISION_NODES;
+  } catch {
+    return INITIAL_DECISION_NODES;
+  }
+}
+
+/**
+ * Save decision graph nodes to localStorage.
+ */
+export function saveLocalDecisionNodes(nodes: DecisionNode[]): void {
+  try {
+    localStorage.setItem(DECISIONS_KEY, JSON.stringify(nodes));
+  } catch (err) {
+    console.error("Error saving decision nodes:", err);
+  }
+}
+
+/**
+ * Add a new decision node to localStorage.
+ */
+export function addLocalDecisionNode(node: Omit<DecisionNode, "id">): DecisionNode[] {
+  const current = loadLocalDecisionNodes();
+  const newNode: DecisionNode = {
+    ...node,
+    id: `node-${Date.now().toString(36)}`,
+    timestamp: node.timestamp || new Date().toISOString(),
+  };
+  const updated = [...current, newNode];
+  saveLocalDecisionNodes(updated);
+  return updated;
 }
 
 /**
@@ -144,9 +267,10 @@ export function getLocalStorageMetrics(): {
 export function exportLocalDataToFile(): void {
   const data = {
     exportedAt: new Date().toISOString(),
-    engine: "MemGovernor Local Engine v2.4",
+    engine: "MemGovernor Local Engine v2.5",
     tokensSaved: loadLocalTokensSaved(),
     memories: loadLocalMemories(),
+    decisionNodes: loadLocalDecisionNodes(),
     compactions: loadLocalCompactions(),
   };
 
@@ -179,6 +303,9 @@ export function importLocalDataFromJSON(jsonContent: string): {
       itemsToImport = parsed;
     } else if (parsed.memories && Array.isArray(parsed.memories)) {
       itemsToImport = parsed.memories;
+      if (parsed.decisionNodes && Array.isArray(parsed.decisionNodes)) {
+        saveLocalDecisionNodes(parsed.decisionNodes);
+      }
     } else {
       return { success: false, count: 0, message: "Invalid JSON format: no memory items found" };
     }

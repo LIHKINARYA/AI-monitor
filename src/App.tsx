@@ -7,6 +7,7 @@ import { TokenBudgetMeter } from "./components/TokenBudgetMeter";
 import { ArchitectureGuide } from "./components/ArchitectureGuide";
 import { ExtensionExportModal } from "./components/ExtensionExportModal";
 import { McpClaudeConnector } from "./components/McpClaudeConnector";
+import { PromptCacheOptimizer } from "./components/PromptCacheOptimizer";
 import { MemoryItem } from "./types";
 import { generateLocalEmbedding } from "./utils/tokenEstimator";
 import {
@@ -120,6 +121,13 @@ export default function App() {
           <ContextCompressor
             onSaveToMemoryStore={handleSaveFromCompressor}
             onIncrementTokensSaved={handleIncrementTokensSaved}
+          />
+        )}
+
+        {activeTab === "optimizer" && (
+          <PromptCacheOptimizer
+            onAddMemory={handleAddMemory}
+            onRefreshMemories={() => setMemories(loadLocalMemories())}
           />
         )}
 

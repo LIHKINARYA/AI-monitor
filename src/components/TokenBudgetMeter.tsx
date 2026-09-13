@@ -1,10 +1,28 @@
-import React, { useState } from "react";
-import { AlertTriangle, CheckCircle2, ShieldAlert, Zap, Sliders, Info } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  ShieldAlert,
+  Zap,
+  Sliders,
+  Sparkles,
+  Terminal,
+  Activity,
+  ArrowRight,
+} from "lucide-react";
+import { loadLocalTokensSaved } from "../services/localStorage";
 
 export const TokenBudgetMeter: React.FC = () => {
   const [windowSize, setWindowSize] = useState<number>(128000);
   const [rawUsageTokens, setRawUsageTokens] = useState<number>(94200);
   const [governedUsageTokens, setGovernedUsageTokens] = useState<number>(14800);
+  const [localTokensSaved, setLocalTokensSaved] = useState<number>(0);
+  const [isAuditing, setIsAuditing] = useState<boolean>(false);
+  const [mcpAuditResult, setMcpAuditResult] = useState<any>(null);
+
+  useEffect(() => {
+    setLocalTokensSaved(loadLocalTokensSaved());
+  }, []);
 
   // Breakdown of governed context
   const systemPrompt = 3800;
@@ -15,8 +33,50 @@ export const TokenBudgetMeter: React.FC = () => {
 
   const rawPercentage = Math.min(100, (rawUsageTokens / windowSize) * 100);
   const governedPercentage = Math.min(100, (totalGoverned / windowSize) * 100);
-
   const isDegradedAttention = rawPercentage > 65;
+
+  const handleRunMcpAudit = async () => {
+    setIsAuditing(true);
+    setMcpAuditResult(null);
+    try {
+      const res = await fetch("/api/mcp/rpc", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: `audit-${Date.now()}`,
+          method: "tools/call",
+          params: {
+            name: "memgovernor_audit_token_budget",
+            arguments: {
+              currentTokens: rawUsageTokens,
+              windowSize: windowSize,
+              breakdown: {
+                systemPrompt,
+                activeFiles,
+                conversationHistory: Math.max(0, rawUsageTokens - 12000),
+                toolOutputs: Math.floor(rawUsageTokens * 0.4),
+              },
+            },
+          },
+        }),
+      });
+      const data = await res.json();
+      setMcpAuditResult(data.result);
+    } catch (err: any) {
+      setMcpAuditResult({
+        content: [{ type: "text", text: `Audit error: ${err.message}` }],
+      });
+    } finally {
+      setIsAuditing(false);
+    }
+  };
+
+  const applyPreset = (tokens: number, size: number) => {
+    setWindowSize(size);
+    setRawUsageTokens(tokens);
+    setMcpAuditResult(null);
+  };
 
   return (
     <div className="space-y-6">
@@ -29,6 +89,11 @@ export const TokenBudgetMeter: React.FC = () => {
               <span className="px-2 py-0.5 text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 rounded">
                 Attention Guard Active
               </span>
+              {localTokensSaved > 0 && (
+                <span className="px-2 py-0.5 text-xs font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 rounded">
+                  {localTokensSaved.toLocaleString()} Local Tokens Saved
+                </span>
+              )}
             </div>
             <p className="text-xs text-neutral-600 mt-1 max-w-2xl">
               LLMs suffer from the <em>"Lost-in-the-Middle"</em> phenomenon. When context windows exceed 65% capacity with uncompressed tool logs, needle retrieval accuracy drops by up to 48%. MemGovernor enforces dynamic token rationing.
@@ -41,7 +106,10 @@ export const TokenBudgetMeter: React.FC = () => {
             {[32000, 64000, 128000, 200000].map((size) => (
               <button
                 key={size}
-                onClick={() => setWindowSize(size)}
+                onClick={() => {
+                  setWindowSize(size);
+                  setMcpAuditResult(null);
+                }}
                 className={`px-2.5 py-1 text-xs font-mono font-medium rounded transition-colors ${
                   windowSize === size
                     ? "bg-neutral-900 text-white shadow-xs"
@@ -53,6 +121,79 @@ export const TokenBudgetMeter: React.FC = () => {
             ))}
           </div>
         </div>
+
+        {/* Interactive Presets & Sliders */}
+        <div className="mt-5 pt-4 border-t border-neutral-100 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex items-center space-x-2">
+            <span className="font-bold text-neutral-700">Quick Test Scenarios:</span>
+            <button
+              onClick={() => applyPreset(24000, 128000)}
+              className="px-2.5 py-1 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded font-medium transition-colors"
+            >
+              Bugfix (24k)
+            </button>
+            <button
+              onClick={() => applyPreset(94200, 128000)}
+              className="px-2.5 py-1 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded font-medium transition-colors"
+            >
+              Refactor (94k - Degradation)
+            </button>
+            <button
+              onClick={() => applyPreset(165000, 200000)}
+              className="px-2.5 py-1 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded font-medium transition-colors"
+            >
+              Monorepo (165k - Severe Loop)
+            </button>
+          </div>
+
+          <div className="flex items-center space-x-3">
+            <span className="text-neutral-500">Simulate Token Load:</span>
+            <input
+              type="range"
+              min={10000}
+              max={windowSize}
+              step={2000}
+              value={rawUsageTokens}
+              onChange={(e) => {
+                setRawUsageTokens(Number(e.target.value));
+                setMcpAuditResult(null);
+              }}
+              className="w-36 accent-neutral-900 cursor-pointer"
+            />
+            <span className="font-mono font-bold text-neutral-900 min-w-16">
+              {(rawUsageTokens / 1000).toFixed(1)}k
+            </span>
+            <button
+              onClick={handleRunMcpAudit}
+              disabled={isAuditing}
+              className="px-3 py-1.5 bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-semibold rounded-lg flex items-center space-x-1.5 transition-colors shadow-xs"
+              id="btn-run-mcp-audit"
+            >
+              {isAuditing ? (
+                <Sparkles className="w-3.5 h-3.5 animate-spin text-amber-400" />
+              ) : (
+                <Activity className="w-3.5 h-3.5 text-amber-400" />
+              )}
+              <span>Run MCP Token Audit</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Live MCP Audit Result Banner */}
+        {mcpAuditResult && (
+          <div className="mt-4 p-3.5 bg-neutral-950 text-neutral-100 rounded-xl border border-neutral-800 font-mono text-xs">
+            <div className="flex items-center justify-between pb-2 border-b border-neutral-800 text-neutral-400">
+              <span className="flex items-center space-x-1.5 text-amber-400 font-bold">
+                <Terminal className="w-3.5 h-3.5" />
+                <span>Unified MCP Server Audit Response</span>
+              </span>
+              <span className="text-[11px]">Tool: memgovernor_audit_token_budget</span>
+            </div>
+            <pre className="mt-2 whitespace-pre-wrap text-[11px] leading-relaxed text-neutral-200">
+              {mcpAuditResult.content?.[0]?.text || JSON.stringify(mcpAuditResult, null, 2)}
+            </pre>
+          </div>
+        )}
       </div>
 
       {/* Comparison Grid: Ungoverned vs Governed */}
@@ -77,7 +218,9 @@ export const TokenBudgetMeter: React.FC = () => {
             <div className="mt-4">
               <div className="flex justify-between text-xs text-neutral-600 mb-1">
                 <span>Total Accumulated: <strong className="text-neutral-900 font-mono">{rawUsageTokens.toLocaleString()} tokens</strong></span>
-                <span className="text-red-600 font-medium">Degradation Zone (&gt;65%)</span>
+                <span className={isDegradedAttention ? "text-red-600 font-medium" : "text-emerald-600 font-medium"}>
+                  {isDegradedAttention ? "Degradation Zone (>65%)" : "Safe Zone (<65%)"}
+                </span>
               </div>
               <div className="w-full bg-neutral-100 rounded-full h-4 relative overflow-hidden border border-neutral-200">
                 {/* 65% threshold indicator */}
@@ -106,7 +249,7 @@ export const TokenBudgetMeter: React.FC = () => {
               </div>
               <div className="flex items-start space-x-2">
                 <AlertTriangle className="w-3.5 h-3.5 mt-0.5 text-red-600 shrink-0" />
-                <span><strong>High Latency & Cost:</strong> 90,000+ tokens processed on every single tool call.</span>
+                <span><strong>High Latency & Cost:</strong> {rawUsageTokens.toLocaleString()} tokens processed on every single tool call.</span>
               </div>
               <div className="flex items-start space-x-2">
                 <AlertTriangle className="w-3.5 h-3.5 mt-0.5 text-red-600 shrink-0" />
@@ -116,8 +259,10 @@ export const TokenBudgetMeter: React.FC = () => {
           </div>
 
           <div className="mt-4 pt-3 border-t border-neutral-100 flex items-center justify-between text-xs text-neutral-500">
-            <span>Status: <strong className="text-red-600">High Risk of Halting Loop</strong></span>
-            <span className="font-mono">Attention Recall: ~52%</span>
+            <span>Status: <strong className={isDegradedAttention ? "text-red-600" : "text-emerald-600"}>
+              {isDegradedAttention ? "High Risk of Halting Loop" : "Attention Retained"}
+            </strong></span>
+            <span className="font-mono">Attention Recall: {isDegradedAttention ? "~52%" : "~98%"}</span>
           </div>
         </div>
 
@@ -195,7 +340,9 @@ export const TokenBudgetMeter: React.FC = () => {
 
           <div className="mt-4 pt-3 border-t border-neutral-100 flex items-center justify-between text-xs text-neutral-500">
             <span>Status: <strong className="text-emerald-600">Zero Attention Drop</strong></span>
-            <span className="font-mono text-emerald-600 font-medium">84.3% Token Reduction</span>
+            <span className="font-mono text-emerald-600 font-medium">
+              {((1 - totalGoverned / rawUsageTokens) * 100).toFixed(1)}% Token Reduction
+            </span>
           </div>
         </div>
       </div>
@@ -241,3 +388,4 @@ export const TokenBudgetMeter: React.FC = () => {
     </div>
   );
 };
+

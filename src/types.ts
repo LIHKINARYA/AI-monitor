@@ -84,3 +84,64 @@ export interface AgentScenario {
   defaultTargetTokens: number;
   category: "Refactoring" | "Bug Hunting" | "Monorepo Build" | "State Loop";
 }
+
+export interface DecisionNode {
+  id: string;
+  turn: number;
+  type: "MILESTONE" | "FAILURE" | "INTERCEPTION" | "SUCCESS";
+  title: string;
+  description: string;
+  tokensCost?: string;
+  outcome: string;
+  antiRegressionRule?: string;
+  timestamp?: string;
+}
+
+export interface PromptCacheAudit {
+  prefixTokens: number;
+  isCacheable: boolean; // >= 1024 tokens for Claude 3.5 Sonnet / Opus
+  minThreshold: number;
+  cacheHealthScore: number; // 0-100
+  potentialSavingsPercent: number; // typically 90% cost, 80% latency
+  invalidatorsDetected: string[];
+  recommendations: string[];
+  prefixStructure: {
+    section: string;
+    tokens: number;
+    isStable: boolean;
+  }[];
+}
+
+export interface ClaudeMdRuleOffload {
+  originalLines: number;
+  optimizedLines: number;
+  tokensSavedPerTurn: number;
+  extractedMemories: Array<{
+    title: string;
+    type: MemoryType;
+    content: string;
+    tags: string[];
+  }>;
+  leanClaudeMd: string;
+}
+
+export interface DoomLoopCheckResult {
+  hasLoop: boolean;
+  repetitionCount: number;
+  repeatedActionPattern?: string;
+  wastedTokensEstimate: number;
+  suggestedIntervention: string;
+  circuitBreakerTripped: boolean;
+}
+
+export interface SessionHandoffSnapshot {
+  sessionId: string;
+  createdAt: string;
+  activeBranch?: string;
+  activeGoal: string;
+  completedMilestones: string[];
+  currentBlockers: string[];
+  filesTouched: string[];
+  antiRegressionRules: string[];
+  markdownHandoffPlan: string;
+}

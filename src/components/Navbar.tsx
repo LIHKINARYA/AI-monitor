@@ -9,6 +9,7 @@ import {
   BookOpen,
   ShieldCheck,
   HardDrive,
+  Sliders,
 } from "lucide-react";
 
 interface NavbarProps {
@@ -28,11 +29,12 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const tabs = [
     { id: "compressor", label: "Context Compressor", icon: Terminal },
+    { id: "optimizer", label: "Cache & Rules Optimizer", icon: Sliders, badge: "CLAUDE" },
     { id: "mcp", label: "Claude Code (MCP Connector)", icon: Cpu, badge: "NATIVE" },
     { id: "memory", label: "Semantic & Vector Memory", icon: Layers },
     { id: "graph", label: "Episodic Decision Graph", icon: Network },
     { id: "budget", label: "Window Governor", icon: ShieldCheck },
-    { id: "guide", label: "Architecture Thesis", icon: BookOpen },
+    { id: "guide", label: "Issues & Architecture", icon: BookOpen },
   ];
 
   return (

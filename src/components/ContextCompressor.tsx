@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { AGENT_SCENARIOS } from "../data/sampleData";
 import { AgentScenario, CompressionResult, ProcessingEngine } from "../types";
 import { estimateTokenCount, clientSideCompress } from "../utils/tokenEstimator";
+import { addLocalDecisionNode } from "../services/localStorage";
 import {
   Sparkles,
   Zap,
@@ -106,8 +107,19 @@ export const ContextCompressor: React.FC<ContextCompressorProps> = ({
         result.data.keyDecisions.join("; "),
         "EPISODIC"
       );
+      
+      // Also commit to episodic decision DAG
+      addLocalDecisionNode({
+        turn: 15,
+        type: "MILESTONE",
+        title: `Compacted: ${result.data.activeGoal || "Session Goal"}`,
+        description: result.data.keyDecisions.join(". "),
+        outcome: `Preserved ${result.compressedTokens} tokens (reduced from ${result.originalTokens})`,
+        antiRegressionRule: result.data.antiRegressionRules?.[0] || undefined,
+        tokensCost: `${result.compressedTokens.toLocaleString()} tokens`,
+      });
     }
-    setSavedBadge("Saved 2 persistent memories to local store!");
+    setSavedBadge("Saved to Local Memory Store & Decision DAG!");
     setTimeout(() => setSavedBadge(null), 3500);
   };
 

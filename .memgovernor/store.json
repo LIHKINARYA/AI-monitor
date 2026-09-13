@@ -1,0 +1,136 @@
+{
+  "version": "2.5.0",
+  "updatedAt": "2026-09-09T13:55:25.575Z",
+  "activeGoal": "Active Task Execution",
+  "antiRegressions": [
+    "Do not re-introduce Bearer authorization headers; project migrated to HttpOnly session cookies.",
+    "Do not use sync fs operations in realtime socket handlers; always use async fs/promises.",
+    "Do not wipe dist/ folder while docker watcher is attached; use incremental esbuild re-emit.",
+    "Do not create postcss.config.js for Tailwind 4; use @import 'tailwindcss' directly in index.css."
+  ],
+  "memories": [
+    {
+      "id": "mem-01",
+      "type": "ANTI_REGRESSION",
+      "title": "HttpOnly Cookie Auth Migration",
+      "content": "Backend migrated from Authorization Bearer to HttpOnly cookie 'session_token'. Frontend requests must specify withCredentials: true.",
+      "tags": [
+        "auth",
+        "cookies",
+        "security",
+        "anti-regression"
+      ],
+      "confidence": 0.98,
+      "createdAt": "2026-09-01",
+      "sourceFile": "server/middleware/auth.ts",
+      "preventLoopsCount": 4
+    },
+    {
+      "id": "mem-02",
+      "type": "SEMANTIC",
+      "title": "Prisma & PostgreSQL Connection Pool Limits",
+      "content": "Neon/PgBouncer pooler port 6543 requires ?sslmode=require&pgbouncer=true. Max connections hard-capped at 15 to avoid deadlock.",
+      "tags": [
+        "database",
+        "prisma",
+        "postgres",
+        "pooler"
+      ],
+      "confidence": 0.95,
+      "createdAt": "2026-09-02",
+      "sourceFile": "prisma/schema.prisma",
+      "preventLoopsCount": 2
+    },
+    {
+      "id": "mem-03",
+      "type": "EPISODIC",
+      "title": "Vite Tailwind 4 Migration Fix",
+      "content": "Tailwind v4 must use @import 'tailwindcss'; directly in index.css. Do NOT generate postcss.config.js or tailwind.config.js as it breaks Vite 6 build.",
+      "tags": [
+        "tailwind",
+        "css",
+        "vite",
+        "build"
+      ],
+      "confidence": 0.99,
+      "createdAt": "2026-09-03",
+      "sourceFile": "src/index.css",
+      "preventLoopsCount": 3
+    }
+  ],
+  "decisionNodes": [
+    {
+      "id": "node-1",
+      "turn": 1,
+      "type": "MILESTONE",
+      "title": "Goal Initiated: Security Hardening",
+      "description": "User requested migrating REST API auth from localStorage Bearer tokens to signed HttpOnly cookies.",
+      "tokensCost": "1,240 tokens",
+      "outcome": "Task planned into 3 milestones: Middleware, Login endpoint, Client interceptor.",
+      "timestamp": "2026-09-01T10:00:00Z"
+    },
+    {
+      "id": "node-2",
+      "turn": 3,
+      "type": "SUCCESS",
+      "title": "Milestone 1: Cookie Middleware Added",
+      "description": "Installed cookie-parser and verified verifySession() reading req.cookies['session_id'].",
+      "tokensCost": "3,800 tokens",
+      "outcome": "Middleware test suite green. Committed into Warm Episodic Memory.",
+      "antiRegressionRule": "Auth token lives in cookie header, NOT req.headers.authorization.",
+      "timestamp": "2026-09-01T10:15:00Z"
+    },
+    {
+      "id": "node-3",
+      "turn": 6,
+      "type": "FAILURE",
+      "title": "Attempted Sub-task: Cross-Domain Cookie Drop",
+      "description": "Agent attempted withCredentials: false on billing requests. Browser dropped cookies due to CORS.",
+      "tokensCost": "8,900 tokens (CORS logs)",
+      "outcome": "Dead-end identified: SameSite=None + Secure=true required for cross-origin staging.",
+      "antiRegressionRule": "Always set withCredentials: true on axios instance; do not revert.",
+      "timestamp": "2026-09-01T10:30:00Z"
+    },
+    {
+      "id": "node-4",
+      "turn": 11,
+      "type": "INTERCEPTION",
+      "title": "Governor Interception: Regression Blocked",
+      "description": "Agent context degraded and LLM generated code reading 'req.headers.authorization'. MemGovernor intercepted before tool execution!",
+      "tokensCost": "Saved ~24,000 tokens of debugging loop",
+      "outcome": "Agent corrected in-flight to use req.cookies['session_id']. Zero regression introduced.",
+      "antiRegressionRule": "Enforced Anti-Regression #01.",
+      "timestamp": "2026-09-01T10:55:00Z"
+    },
+    {
+      "id": "node-5",
+      "turn": 14,
+      "type": "SUCCESS",
+      "title": "Task Finalized: Clean Context Rollup",
+      "description": "All endpoints verified. Ephemeral tool outputs collapsed into a 240-token episodic summary.",
+      "tokensCost": "Total governed: 12,400 tokens (vs 74,000 uncompressed)",
+      "outcome": "Repository ready for production deployment with pristine commit history.",
+      "timestamp": "2026-09-01T11:20:00Z"
+    },
+    {
+      "id": "node-mtu5vabr",
+      "turn": 16,
+      "type": "SUCCESS",
+      "title": "Unified MCP Verified",
+      "description": "All 9 tools verified and functional",
+      "tokensCost": "Calculated in-flight",
+      "outcome": "System 100% operational",
+      "timestamp": "2026-09-09T13:55:40.935Z"
+    },
+    {
+      "id": "node-cb-mtyjk6je",
+      "turn": 7,
+      "type": "INTERCEPTION",
+      "title": "Automated Circuit Breaker: Doom Loop Intercepted",
+      "description": "Interrupted circular repetition: Repeated tool execution 'run_command' on target 'npm test' without successful resolution.",
+      "tokensCost": "Saved ~19,200 tokens",
+      "outcome": "Automated halt triggered to prevent runaway token burning.",
+      "timestamp": "2026-09-12T15:30:02.138Z"
+    }
+  ]
+}

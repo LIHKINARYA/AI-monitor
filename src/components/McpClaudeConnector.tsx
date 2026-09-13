@@ -90,8 +90,119 @@ export const McpClaudeConnector: React.FC = () => {
           )
         );
         break;
+      case "memgovernor_record_decision":
+        setToolArgs(
+          JSON.stringify(
+            {
+              turn: 7,
+              type: "INTERCEPTION",
+              title: "Blocked Circular Regex Refactor",
+              description: "Agent attempted to replace AST parser with custom regex, violating project parsing standards.",
+              outcome: "Enforced AST traversal; saved 18,000 debugging tokens.",
+              antiRegressionRule: "Always use typescript compiler AST for code analysis; no custom regex tokens.",
+              tokensCost: "Saved 18,000 tokens",
+            },
+            null,
+            2
+          )
+        );
+        break;
+      case "memgovernor_get_decision_graph":
+        setToolArgs(
+          JSON.stringify(
+            {
+              limit: 5,
+              typeFilter: "ALL",
+            },
+            null,
+            2
+          )
+        );
+        break;
+      case "memgovernor_audit_token_budget":
+        setToolArgs(
+          JSON.stringify(
+            {
+              currentTokens: 96400,
+              windowSize: 128000,
+              breakdown: {
+                systemPrompt: 4200,
+                activeFiles: 32000,
+                conversationHistory: 44000,
+                toolOutputs: 16200,
+              },
+            },
+            null,
+            2
+          )
+        );
+        break;
+      case "memgovernor_export_state":
+        setToolArgs(JSON.stringify({}, null, 2));
+        break;
       case "memgovernor_get_context_status":
         setToolArgs(JSON.stringify({}, null, 2));
+        break;
+      case "memgovernor_analyze_prompt_cache":
+        setToolArgs(
+          JSON.stringify(
+            {
+              systemPrompt:
+                "You are an expert fullstack TypeScript software engineer working in a Vite + React + Express repository. Follow strict architectural patterns.",
+              claudemdContent:
+                "# Project Directives\n- Use Node.js 20+ and TypeScript 5.\n- Backend API lives in /server.ts.\n- Store persistent state locally in .memgovernor/store.json.\n- Run tests with npm run lint.\n- Never edit package.json without explicit approval.",
+              toolsCount: 13,
+            },
+            null,
+            2
+          )
+        );
+        break;
+      case "memgovernor_optimize_rules":
+        setToolArgs(
+          JSON.stringify(
+            {
+              rulesText:
+                "# Project Guidelines\n## Build Commands\n- `npm run build`\n- `npm run dev`\n\n## API Reference & Schemas\ninterface UserProfile {\n  id: string;\n  email: string;\n  tier: 'free' | 'pro' | 'enterprise';\n  permissions: string[];\n}\ninterface BillingRecord {\n  invoiceId: string;\n  amount: number;\n  currency: 'USD';\n  timestamp: string;\n}\n\n## Historic Bugs & Invariants\n- Do not use Authorization Bearer headers; use HttpOnly session cookies.\n- Do not write synchronous fs calls in realtime loops.",
+              autoCommitMemories: true,
+            },
+            null,
+            2
+          )
+        );
+        break;
+      case "memgovernor_detect_doom_loop":
+        setToolArgs(
+          JSON.stringify(
+            {
+              recentActions: [
+                { turn: 1, tool: "run_command", target: "npm test", outcome: "Failed: AssertionError in auth.spec.ts" },
+                { turn: 2, tool: "edit_file", target: "server/auth.ts", outcome: "Applied patch" },
+                { turn: 3, tool: "run_command", target: "npm test", outcome: "Failed: AssertionError in auth.spec.ts" },
+                { turn: 4, tool: "run_command", target: "npm test", outcome: "Failed: AssertionError in auth.spec.ts" },
+              ],
+              failureThreshold: 2,
+            },
+            null,
+            2
+          )
+        );
+        break;
+      case "memgovernor_create_session_handoff":
+        setToolArgs(
+          JSON.stringify(
+            {
+              activeGoal: "Migrate REST authentication from Bearer token headers to signed HttpOnly cookies",
+              currentBlockers: ["CORS staging environment requires SameSite=None + Secure attribute"],
+              nextSteps: [
+                "Verify cookie persistence across cross-origin requests",
+                "Execute final end-to-end auth test suite",
+              ],
+            },
+            null,
+            2
+          )
+        );
         break;
     }
   };
@@ -159,10 +270,10 @@ export const McpClaudeConnector: React.FC = () => {
               <span className="text-xs font-mono text-neutral-400">Model Context Protocol for Claude Code</span>
             </div>
             <h2 className="text-xl font-bold text-white mt-2 tracking-tight">
-              Claude Code MCP Connector: Zero-External-API Architecture
+              Unified Claude Code MCP: All Workflows in One Protocol
             </h2>
             <p className="text-xs text-neutral-300 mt-1 max-w-2xl leading-relaxed">
-              When installed as an MCP server in Claude Code, <strong className="text-amber-300">Claude itself</strong> (Claude 3.7 / 3.5 Sonnet) provides 100% of the cognitive processing power for context compaction and memory synthesis. No external Gemini or third-party API keys are required.
+              One unified MCP server (<code className="text-amber-300 font-mono">memgovernor</code>) houses all 9 tools across every workflow: Context Compactor, Hybrid Memory Store, Episodic Decision DAG, Anti-Regression Guardrails, and Token Governance. <strong className="text-amber-300">Claude itself</strong> powers reasoning with 100% local persistence and zero external API keys.
             </p>
           </div>
 
@@ -246,32 +357,85 @@ export const McpClaudeConnector: React.FC = () => {
                 </div>
 
                 {/* Tool Pills */}
-                <div className="space-y-2">
+                <div className="space-y-1.5 max-h-[360px] overflow-y-auto pr-1">
                   {[
-                    {
-                      name: "memgovernor_retrieve_memory",
-                      label: "retrieve_memory",
-                      desc: "Query local hybrid vector & episodic DAG store",
-                    },
                     {
                       name: "memgovernor_compact_context",
                       label: "compact_context",
-                      desc: "Instruct Claude to compact current conversation window",
+                      category: "Compactor",
+                      desc: "Instruct Claude to compact active context into dense state",
+                    },
+                    {
+                      name: "memgovernor_retrieve_memory",
+                      label: "retrieve_memory",
+                      category: "Memory",
+                      desc: "Query local hybrid vector & episodic DAG memory store",
                     },
                     {
                       name: "memgovernor_check_anti_regression",
                       label: "check_anti_regression",
-                      desc: "Verify proposed changes against learned invariant rules",
+                      category: "Guardrail",
+                      desc: "Verify planned change against learned invariant rules",
                     },
                     {
                       name: "memgovernor_commit_milestone",
                       label: "commit_milestone",
-                      desc: "Record key milestone or anti-regression into local store",
+                      category: "Memory",
+                      desc: "Record key milestone or invariant into local repository store",
+                    },
+                    {
+                      name: "memgovernor_record_decision",
+                      label: "record_decision",
+                      category: "Episodic DAG",
+                      desc: "Log turn step, trial, failure dead-end or loop interception",
+                    },
+                    {
+                      name: "memgovernor_get_decision_graph",
+                      label: "get_decision_graph",
+                      category: "Episodic DAG",
+                      desc: "Retrieve chronological sequence of decisions and interventions",
+                    },
+                    {
+                      name: "memgovernor_audit_token_budget",
+                      label: "audit_token_budget",
+                      category: "Governor",
+                      desc: "Audit 65% attention saturation limit & needle retrieval safety",
+                    },
+                    {
+                      name: "memgovernor_export_state",
+                      label: "export_state",
+                      category: "Persistence",
+                      desc: "Export memories and invariants snapshot as portable JSON",
                     },
                     {
                       name: "memgovernor_get_context_status",
                       label: "get_context_status",
-                      desc: "Inspect token budget, saturation, and active rules",
+                      category: "Telemetry",
+                      desc: "Inspect active governor health, invariants count, and goal",
+                    },
+                    {
+                      name: "memgovernor_analyze_prompt_cache",
+                      label: "analyze_prompt_cache",
+                      category: "Cache",
+                      desc: "Validate 1,024-token prefix, detect invalidators, and audit 90% savings",
+                    },
+                    {
+                      name: "memgovernor_optimize_rules",
+                      label: "optimize_rules",
+                      category: "Rules",
+                      desc: "Lint oversized CLAUDE.md and offload bulky schemas into local memory",
+                    },
+                    {
+                      name: "memgovernor_detect_doom_loop",
+                      label: "detect_doom_loop",
+                      category: "Circuit Breaker",
+                      desc: "Detect circular tool failures or repetitive file reads and halt loop",
+                    },
+                    {
+                      name: "memgovernor_create_session_handoff",
+                      label: "create_session_handoff",
+                      category: "Handoff",
+                      desc: "Generate clean plan.md / handoff.json for zero-rot session resumes",
                     },
                   ].map((t) => {
                     const isSelected = selectedTool === t.name;
@@ -279,7 +443,7 @@ export const McpClaudeConnector: React.FC = () => {
                       <button
                         key={t.name}
                         onClick={() => handleSelectTool(t.name)}
-                        className={`w-full text-left p-2.5 rounded-lg border transition-all ${
+                        className={`w-full text-left p-2 rounded-lg border transition-all ${
                           isSelected
                             ? "bg-neutral-900 text-white border-neutral-900 shadow-xs"
                             : "bg-neutral-50 hover:bg-neutral-100 text-neutral-800 border-neutral-200"
@@ -288,15 +452,15 @@ export const McpClaudeConnector: React.FC = () => {
                         <div className="flex items-center justify-between">
                           <span className="font-mono text-xs font-bold">{t.label}</span>
                           <span
-                            className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                            className={`text-[9px] font-semibold px-1.5 py-0.5 rounded ${
                               isSelected ? "bg-neutral-800 text-amber-300" : "bg-neutral-200 text-neutral-700"
                             }`}
                           >
-                            MCP Tool
+                            {t.category}
                           </span>
                         </div>
                         <p
-                          className={`text-[11px] mt-1 line-clamp-1 ${
+                          className={`text-[11px] mt-0.5 line-clamp-1 ${
                             isSelected ? "text-neutral-300" : "text-neutral-500"
                           }`}
                         >
@@ -506,7 +670,7 @@ export const McpClaudeConnector: React.FC = () => {
             </span>
             <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-3 text-xs text-neutral-700 space-y-1">
               <p>1. Start Claude Code in your terminal: <code>claude</code></p>
-              <p>2. Type <code>/mcp</code> to see active connectors. You will see <strong>memgovernor</strong> listed with 5 active tools.</p>
+              <p>2. Type <code>/mcp</code> to see active connectors. You will see <strong>memgovernor</strong> listed with all 9 unified tools covering every workflow.</p>
               <p>3. Ask Claude: <em>"Check MemGovernor for past architectural decisions about this project."</em></p>
               <p>4. Claude will seamlessly invoke <code>memgovernor_retrieve_memory</code> and apply learned invariants!</p>
             </div>
